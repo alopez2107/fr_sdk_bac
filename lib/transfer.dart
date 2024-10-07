@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'dart:ffi';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fr_sdk_bac/register.dart';
-import 'FRNode.dart';
+import 'fr_node.dart';
 import 'home.dart';
 import 'login.dart';
 
@@ -20,7 +20,7 @@ class _TransferPageState extends State<TransferPage> {
   final _pageOptions = [
     const MyHomePage(),
     const LoginPage(),
-    RegisterPage()
+    const RegisterPage()
   ];
 
   late List<TextField> _fields = [];
@@ -30,8 +30,8 @@ class _TransferPageState extends State<TransferPage> {
   late String destAccount = "";
   late double amount = 0.0;
 
-  static const platform = MethodChannel('forgerock.com/SampleBridge'); //Method channel as defined in the native Bridge code
-
+  static const platform = MethodChannel(
+      'forgerock.com/SampleBridge'); //Method channel as defined in the native Bridge code
 
   Future<void> _startTransaction(String authnType) async {
     try {
@@ -39,7 +39,12 @@ class _TransferPageState extends State<TransferPage> {
       destAccount = _controllers[1].text;
       amount = double.parse(_controllers[2].text);
       //Call the default login tree.
-      final String result = await platform.invokeMethod('callEndpoint', ["https://bacciambl.encore.forgerock.com/transfer?authType=${authnType}",'POST', '{"srcAcct": $srcAccount, "destAcct": $destAccount, "amount": $amount}', "true"]);
+      final String result = await platform.invokeMethod('callEndpoint', [
+        "https://bacciambl.encore.forgerock.com/transfer?authType=$authnType",
+        'POST',
+        '{"srcAcct": $srcAccount, "destAcct": $destAccount, "amount": $amount}',
+        "true"
+      ]);
       debugPrint("Final response $result");
       /*Map<String, dynamic> frNodeMap = jsonDecode(result);
       var frNode = FRNode.fromJson(frNodeMap);
@@ -47,7 +52,7 @@ class _TransferPageState extends State<TransferPage> {
       _handleNode(frNode);*/
     } on PlatformException catch (e) {
       debugPrint('SDK: $e');
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     }
   }
 
@@ -57,10 +62,10 @@ class _TransferPageState extends State<TransferPage> {
     var callbackIndex = 0;
     while (callbackIndex < currentNode.callbacks.length) {
       var frCallback = currentNode.callbacks[callbackIndex];
-      if (frCallback.type == "WebAuthnRegistrationCallback" || frCallback.type == "HiddenValueCallback") {
+      if (frCallback.type == "WebAuthnRegistrationCallback" ||
+          frCallback.type == "HiddenValueCallback") {
         // Do nothing - no input required.
-      }
-      else {
+      } else {
         // Report error
       }
       callbackIndex++;
@@ -75,7 +80,7 @@ class _TransferPageState extends State<TransferPage> {
         //_navigateToNextScreen(context);
         //process the results
         debugPrint("Transaction successful");
-      } else  {
+      } else {
         Map<String, dynamic> frNodeMap = jsonDecode(result);
         /*Map<String, dynamic> callback = frNodeMap["frCallbacks"][0];
         if ( callback["type"] == "WebAuthnRegistrationCallback") {
@@ -89,7 +94,7 @@ class _TransferPageState extends State<TransferPage> {
       }
     } catch (e) {
       debugPrint('SDK Error: $e');
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     }
   }
 
@@ -103,14 +108,10 @@ class _TransferPageState extends State<TransferPage> {
         break;
       }
     }
-    if (webAuthn) { // Break the cycle and make sure we only call _next() once as soon as WebAuthnCallbacks are detected.
+    if (webAuthn) {
+      // Break the cycle and make sure we only call _next() once as soon as WebAuthnCallbacks are detected.
       _next();
     }
-  }
-
-
-  void _onItemTapped(int index) {
-
   }
 
   // Widgets
@@ -156,7 +157,9 @@ class _TransferPageState extends State<TransferPage> {
     _fields.add(amtField);
     _controllers.add(amtController);
     int fieldQty = _fields.length;
-    print("How many fields: $fieldQty");
+    if (kDebugMode) {
+      print("How many fields: $fieldQty");
+    }
     return ListView.builder(
       shrinkWrap: true,
       itemCount: _fields.length,
@@ -176,7 +179,9 @@ class _TransferPageState extends State<TransferPage> {
       margin: const EdgeInsets.all(15.0),
       height: 60,
       child: TextButton(
-        style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.red)),
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(Colors.red),
+        ),
         onPressed: () async {
           _startTransaction("verify");
         },
@@ -194,13 +199,13 @@ class _TransferPageState extends State<TransferPage> {
       width: MediaQuery.of(context).size.width,
       margin: const EdgeInsets.all(15.0),
       height: 60,
-      child:  TextButton(
-        style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.red)),
+      child: TextButton(
+        style:
+            ButtonStyle(backgroundColor: WidgetStateProperty.all(Colors.red)),
         onPressed: () async {
           _startTransaction("fido");
         },
-        child:
-        const Text(
+        child: const Text(
           "Register with Fido",
           style: TextStyle(color: Colors.white),
         ),
@@ -214,17 +219,16 @@ class _TransferPageState extends State<TransferPage> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Title(color: Colors.red, child: const Text("BAC PoC Demo - Transfers")),
+          title: Title(
+              color: Colors.red, child: const Text("BAC PoC Demo - Transfers")),
           centerTitle: true,
           shadowColor: Colors.black,
           elevation: 3,
-          titleTextStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red
-          ),
+          titleTextStyle:
+              const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
         ),
         backgroundColor: Colors.white,
-        body: SingleChildScrollView (
+        body: SingleChildScrollView(
           child: Column(
             children: [
               _listView(context),

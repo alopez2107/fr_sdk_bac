@@ -3,10 +3,8 @@ import "package:fr_sdk_bac/login.dart";
 import "package:fr_sdk_bac/register.dart";
 import "package:fr_sdk_bac/home.dart";
 
-
 void main() {
-  runApp(
-      const BACMobileApp());
+  runApp(const BACMobileApp());
 }
 
 class BACMobileApp extends StatefulWidget {
@@ -22,7 +20,7 @@ class _BACMobileAppState extends State<BACMobileApp> {
   final _pageOptions = [
     const MyHomePage(),
     const LoginPage(),
-    RegisterPage()
+    const RegisterPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -36,7 +34,10 @@ class _BACMobileAppState extends State<BACMobileApp> {
     return MaterialApp(
         home: Scaffold(
             appBar: AppBar(
-              title: Text("BAC Credomatic - PoC Mobile App", style: TextStyle(color: Colors.white),),
+              title: const Text(
+                'BAC Credomatic - PoC Mobile App',
+                style: TextStyle(color: Colors.white),
+              ),
               backgroundColor: Colors.red,
             ),
             body: _pageOptions[_selectedIndex],
@@ -59,8 +60,6 @@ class _BACMobileAppState extends State<BACMobileApp> {
               selectedItemColor: Colors.blueAccent[800],
               onTap: _onItemTapped,
               backgroundColor: Colors.red,
-            )
-        )
-    );
+            )));
   }
 }

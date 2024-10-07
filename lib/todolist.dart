@@ -1,10 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'dart:convert' as convert;
 
 class Todo {
   Todo({required this.name, required this.id, required this.checked});
@@ -14,8 +12,10 @@ class Todo {
 }
 
 class TodoList extends StatefulWidget {
+  const TodoList({super.key});
+
   @override
-  _TodoListState createState() => new _TodoListState();
+  State<TodoList> createState() => _TodoListState();
 }
 
 class TodoItem extends StatelessWidget {
@@ -25,12 +25,12 @@ class TodoItem extends StatelessWidget {
   }) : super(key: ObjectKey(todo));
 
   final Todo todo;
-  final onTodoChanged;
+  final void Function(Todo) onTodoChanged;
 
   TextStyle? _getTextStyle(bool checked) {
     if (!checked) return null;
 
-    return TextStyle(
+    return const TextStyle(
       color: Colors.black54,
       decoration: TextDecoration.lineThrough,
     );
@@ -62,9 +62,9 @@ class _TodoListState extends State<TodoList> {
   @override
   void initState() {
     super.initState();
-    SchedulerBinding.instance?.addPostFrameCallback((_) => {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
       //Calling the userinfo endpoint is going to give use some user profile information to enrich our UI. Additionally, verifies that we have a valid access token.
-      _getUserInfo()
+      _getUserInfo();
     });
   }
 
@@ -78,27 +78,28 @@ class _TodoListState extends State<TodoList> {
       response = result;
       header = userInfoMap["name"];
       subtitle = userInfoMap["email"];
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
       setState(() {
         _getTodos();
       });
     } on PlatformException catch (e) {
       response = "SDK Start Failed: '${e.message}'.";
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     }
     debugPrint('SDK: $response');
   }
 
   Future<void> _logout() async {
     final String result = await platform.invokeMethod('logout');
-    _navigateToNextScreen(context);
+    if (mounted) _navigateToNextScreen(context);
   }
 
   //Network Calls
   Future<void> _deleteTodo(Todo todo) async {
     try {
-      String _id = todo.id;
-      final String result = await platform.invokeMethod('callEndpoint', ["https://fr-todos-api.crbrl.io/todos/$_id",'DELETE', '']);
+      final _id = todo.id;
+      final String result = await platform.invokeMethod('callEndpoint',
+          ["https://fr-todos-api.crbrl.io/todos/$_id", 'DELETE', '']);
       _getTodos();
     } on PlatformException catch (e) {
       debugPrint('SDK: $e');
@@ -108,7 +109,11 @@ class _TodoListState extends State<TodoList> {
   Future<void> _updateTodo(Todo todo, bool checked) async {
     try {
       String _id = todo.id.toString();
-      final String result = await platform.invokeMethod('callEndpoint', ["https://fr-todos-api.crbrl.io/todos/$_id",'POST', '{\"completed\": $checked}, "false"']);
+      final String result = await platform.invokeMethod('callEndpoint', [
+        "https://fr-todos-api.crbrl.io/todos/$_id",
+        'POST',
+        '{"completed": $checked}, "false"'
+      ]);
       _getTodos();
     } on PlatformException catch (e) {
       debugPrint('SDK: $e');
@@ -117,15 +122,22 @@ class _TodoListState extends State<TodoList> {
 
   Future<void> _getTodos() async {
     try {
-      final String result = await platform.invokeMethod('callEndpoint', ["https://fr-todos-api.crbrl.io/todos",'GET', '', "false"]);
+      final String result = await platform.invokeMethod('callEndpoint',
+          ["https://fr-todos-api.crbrl.io/todos", 'GET', '', "false"]);
       //final String result = await platform.invokeMethod('callEndpoint', ["https://bacciambl.encore.forgerock.com/transfer?authType=fido",'POST', '{"srcAcct": "35679383", "destAcct": "3975273", "amount": 230.00}', "true"]);
       List<dynamic> toDosList = jsonDecode(result);
-      List<Map<String, dynamic>> todos = List<Map<String, dynamic>>.from(toDosList);
+      final todos = List<Map<String, dynamic>>.from(toDosList);
       _todos.clear();
-      todos.forEach((Map<String, dynamic> todoMap) {
-        _todos.add(Todo(name: todoMap["title"], checked: todoMap["completed"], id: todoMap["_id"]));
-        setState(() { });
-      });
+      for (var todoMap in todos) {
+        _todos.add(
+          Todo(
+            name: todoMap["title"],
+            checked: todoMap["completed"],
+            id: todoMap["_id"],
+          ),
+        );
+        setState(() {});
+      }
       debugPrint('SDK: $todos');
     } on PlatformException catch (e) {
       debugPrint('SDK: $e');
@@ -134,7 +146,11 @@ class _TodoListState extends State<TodoList> {
 
   Future<void> _addTodoItem(String name) async {
     try {
-      final String result = await platform.invokeMethod('callEndpoint', ["https://fr-todos-api.crbrl.io/todos",'POST', '{\"title\": \"$name\"}']);
+      final result = await platform.invokeMethod('callEndpoint', [
+        "https://fr-todos-api.crbrl.io/todos",
+        'POST',
+        '{"title": "$name"}'
+      ]);
       _getTodos();
     } on PlatformException catch (e) {
       debugPrint('SDK: $e');
@@ -158,18 +174,21 @@ class _TodoListState extends State<TodoList> {
   }
 
   void showAlertDialog(BuildContext context) {
-    AlertDialog alert=AlertDialog(
-      content: new Row(
+    AlertDialog alert = AlertDialog(
+      content: Row(
         children: [
-          CircularProgressIndicator(),
-          Container(margin: EdgeInsets.only(left: 5),child:Text("Loading" )),
-        ],),
+          const CircularProgressIndicator(),
+          Container(
+            margin: const EdgeInsets.only(left: 5),
+            child: const Text("Loading"),
+          ),
+        ],
+      ),
     );
-    showDialog(barrierDismissible: false,
-      context:context,
-      builder:(BuildContext context){
-        return alert;
-      },
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => alert,
     );
   }
 
@@ -202,7 +221,7 @@ class _TodoListState extends State<TodoList> {
       floatingActionButton: FloatingActionButton(
           onPressed: () => _displayDialog(),
           tooltip: 'Add Item',
-          child: Icon(Icons.add)),
+          child: const Icon(Icons.add)),
     );
   }
 
@@ -237,9 +256,8 @@ class _TodoListState extends State<TodoList> {
     return Container(
         color: Colors.greenAccent[100],
         width: MediaQuery.of(context).size.width,
-        margin: EdgeInsets.all(15.0),
-        child:
-        Padding(
+        margin: const EdgeInsets.all(15.0),
+        child: Padding(
           padding: const EdgeInsets.all(15.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -247,8 +265,8 @@ class _TodoListState extends State<TodoList> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.gpp_good),
-                  SizedBox(width: 2),
+                  const Icon(Icons.gpp_good),
+                  const SizedBox(width: 2),
                   Expanded(
                     flex: 4,
                     child: Text(
@@ -264,11 +282,11 @@ class _TodoListState extends State<TodoList> {
                   )
                 ],
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(width: 28),
+                  const SizedBox(width: 28),
                   Expanded(
                       flex: 4,
                       child: Text(
@@ -280,20 +298,18 @@ class _TodoListState extends State<TodoList> {
                         softWrap: true,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                      )
-                  )
+                      ))
                 ],
               ),
             ],
           ),
-        )
-    );
+        ));
   }
 
   Widget _listView() {
     return ListView(
       shrinkWrap: true,
-      padding: EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       children: _todos.map((Todo todo) {
         // return TodoItem(
         //   todo: todo,
@@ -308,8 +324,7 @@ class _TodoListState extends State<TodoList> {
             child: TodoItem(
               todo: todo,
               onTodoChanged: _handleTodoChange,
-            )
-        );
+            ));
       }).toList(),
     );
   }

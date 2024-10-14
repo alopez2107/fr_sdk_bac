@@ -321,7 +321,6 @@ public class FRAuthSampleBridge {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-                //System.out.println("invokeTransactionWithAuthorization - onResponse => Call response " + response.body().string());
                 promise.success(response.body().string());
             }
         });

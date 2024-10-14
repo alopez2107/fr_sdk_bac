@@ -64,12 +64,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.concurrent.Semaphore;
 
 public class FRAuthSampleBridge {
     Context context;
     Node currentNode;
-
+    private String txId = null;
     private static final String CHANNEL = "forgerock.com/SampleBridge";
 
     FRAuthSampleBridge(Context context) {
@@ -166,8 +167,9 @@ public class FRAuthSampleBridge {
                 try {
                     System.out.println("OnSuccess - nodeListenerFuture");
                     Gson gson = new Gson();
-                    map.put("type", "LoginSuccess");
-                    promise.success(gson.toJson(map));
+                    //map.put("type", "LoginSuccess");
+                    //promise.success(gson.toJson(map));
+                    invokeTransactionWithAuthorization(promise, endpoint, method, payload, txId);
                 } catch (Exception e) {
                     Logger.warn("txAuthorization", e, "Login Failed");
                     promise.error("error", e.getLocalizedMessage(), e);
@@ -212,6 +214,14 @@ public class FRAuthSampleBridge {
                 @Override
                 public Object onAdviceReceived(@NonNull Context context, @NonNull PolicyAdvice advice, @NonNull Continuation<? super Unit> continuation) {
                     System.out.println("In onAdviceReceived");
+                    System.out.println("Advice Received : " + advice.toString());
+                    StringTokenizer tokens = new StringTokenizer(advice.toString(), "</>");
+                    String token = tokens.nextToken();
+                    while (!token.equalsIgnoreCase("Value")) {
+                        token = tokens.nextToken();
+                    }
+                    txId = tokens.nextToken();
+                    System.out.println("Transaction ID obtained: " + txId);
                     FRSession.getCurrentSession().authenticate(context, advice, nodeListenerFuture);
                     return advice;
                 }
@@ -284,8 +294,6 @@ public class FRAuthSampleBridge {
     }
 
     private void invokeTransactionWithAuthorization(MethodChannel.Result promise, String endpoint, String method, String payload, String txId) {
-        String uri = endpoint + "&_txid=" + txId + "&realm=/alpha&authIndexType=composite_advice&authIndexValue=<Advices><AttributeValuePair><Attribute name=\"TransactionConditionAdvice\"/><Value>" + txId + "</Value></AttributeValuePair></Advices>";
-
         OkHttpClient.Builder builder = new OkHttpClient.Builder().followRedirects(false);
         OkHttpClient client;
         Request request = null;
@@ -297,7 +305,7 @@ public class FRAuthSampleBridge {
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         RequestBody body = RequestBody.create(payload, JSON);
         System.out.println("Body " + payload);
-        request = new Request.Builder().url(uri)
+        request = new Request.Builder().url(endpoint)
                              .addHeader("x-authenticate-response", "header")
                              .addHeader("cookie", "tokenId=" + ssoToken)
                              .addHeader("TxId", txId)
@@ -313,7 +321,7 @@ public class FRAuthSampleBridge {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-                System.out.println("onResponse => Call response " + response.body().string());
+                //System.out.println("invokeTransactionWithAuthorization - onResponse => Call response " + response.body().string());
                 promise.success(response.body().string());
             }
         });

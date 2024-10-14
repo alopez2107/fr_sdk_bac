@@ -39,7 +39,7 @@ class _TransferPageState extends State<TransferPage> {
       destAccount = _controllers[1].text;
       amount = double.parse(_controllers[2].text);
       //Call the default login tree.
-      final String result = await platform.invokeMethod('callEndpoint', ["https://bacciambl.encore.forgerock.com/transfer?authType=${authnType}",'POST', '{"srcAcct": $srcAccount, "destAcct": $destAccount, "amount": $amount}', "true"]);
+      final String result = await platform.invokeMethod('callEndpoint', ["https://alexsm.encore.forgerock.com/ig/transfer?authType=${authnType}",'POST', '{"srcAcct": $srcAccount, "destAcct": $destAccount, "amount": $amount}', "true"]);
       debugPrint("Final response $result");
       /*Map<String, dynamic> frNodeMap = jsonDecode(result);
       var frNode = FRNode.fromJson(frNodeMap);

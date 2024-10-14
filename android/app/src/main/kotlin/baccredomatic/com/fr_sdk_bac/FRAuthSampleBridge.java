@@ -159,10 +159,12 @@ public class FRAuthSampleBridge {
         System.out.println("Calling callEndpoint - requireAuthz is " + requireAuthz);
 
         NodeListener<FRSession> nodeListenerFuture = new NodeListener<FRSession>() {
+            final NodeListener<FRSession> nodeListener = this;
             @Override
             public void onSuccess(FRSession session) {
                 HashMap map = new HashMap<>();
                 try {
+                    System.out.println("OnSuccess - nodeListenerFuture");
                     Gson gson = new Gson();
                     map.put("type", "LoginSuccess");
                     promise.success(gson.toJson(map));
@@ -187,11 +189,7 @@ public class FRAuthSampleBridge {
                     public void onSuccess(Void result) {
                         System.out.println("On Successful Web Authentication");
                         HashMap map = new HashMap<>();
-                        // Need to invoke the API again adding the TxId in a header - will do that later
-                        //invokeTransactionWithAuthorization(promise, endpoint, method, payload, transactionId[0]);
-                        Gson gson = new Gson();
-                        map.put("Result", "Transaction Successful");
-                        promise.success(gson.toJson(map));
+                        currentNode.next(context, nodeListener);
                     }
 
                     @Override
@@ -266,7 +264,8 @@ public class FRAuthSampleBridge {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-                if (response.isRedirect()) {
+                System.out.println("onResponse => Call response " + response.body().string());
+                /*if (response.isRedirect()) {
                     System.out.println("Policy redirection");
                     Gson gson = new Gson();
                     JsonObject advices = gson.fromJson(response.body().string(), JsonObject.class);
@@ -279,7 +278,7 @@ public class FRAuthSampleBridge {
                 else {
                     System.out.println("onResponse => Call response " + response.body().string());
                     promise.success(response.body().string());
-                }
+                }*/
             }
         });
     }
